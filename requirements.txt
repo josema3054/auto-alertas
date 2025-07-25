@@ -1,0 +1,43 @@
+# Dependencias principales
+streamlit>=1.28.0
+requests>=2.31.0
+beautifulsoup4>=4.12.2
+supabase>=1.0.4
+python-telegram-bot>=20.6
+pandas>=2.1.0
+plotly>=5.17.0
+apscheduler>=3.10.4
+
+# Selenium para scraping robusto
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
+# Utilidades de fecha y tiempo
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# Logging y configuración
+python-dotenv>=1.0.0
+pydantic>=2.4.0
+
+# Web scraping
+lxml>=4.9.3
+html5lib>=1.1
+
+# Base de datos y APIs
+postgrest>=0.10.8
+httpx>=0.25.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+
+# Desarrollo
+black>=23.9.0
+flake8>=6.1.0
+mypy>=1.6.0
+
+# Deployment
+gunicorn>=21.2.0
+uvicorn>=0.23.0

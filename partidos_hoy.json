@@ -1,0 +1,167 @@
+[
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "1:15 pm",
+    "porcentaje": 83,
+    "tipo": "Under",
+    "texto": "MLB|Mia|Atl|Sat. Aug. 09|1:15 pm ET|83 % Under|17 % Over|7.5|19|4|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "7:10 pm",
+    "porcentaje": 80,
+    "tipo": "Under",
+    "texto": "MLB|Tb|Cin|Fri. Jul. 25|7:10 pm ET|80 % Under|20 % Over|9.5|8|2|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "2:20 pm",
+    "porcentaje": 69,
+    "tipo": "Under",
+    "texto": "MLB|Mil|Chc|Mon. Aug. 18|2:20 pm ET|69 % Under|31 % Over|8|18|8|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "9:38 pm",
+    "porcentaje": 67,
+    "tipo": "Over",
+    "texto": "MLB|Sea|Laa|Fri. Jul. 25|9:38 pm ET|67 % Over|33 % Under|8.5|6|3|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "7:10 pm",
+    "porcentaje": 67,
+    "tipo": "Under",
+    "texto": "MLB|Lad|Bos|Fri. Jul. 25|7:10 pm ET|67 % Under|33 % Over|10|6|3|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "8:10 pm",
+    "porcentaje": 67,
+    "tipo": "Under",
+    "texto": "MLB|Was|Min|Fri. Jul. 25|8:10 pm ET|67 % Under|33 % Over|8|8|4|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "10:15 pm",
+    "porcentaje": 64,
+    "tipo": "Under",
+    "texto": "MLB|Nym|Sf|Fri. Jul. 25|10:15 pm ET|64 % Under|36 % Over|7.5|9|5|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "8:10 pm",
+    "porcentaje": 63,
+    "tipo": "Under",
+    "texto": "MLB|Cle|Kc|Fri. Jul. 25|8:10 pm ET|63 % Under|37 % Over|8.5|12|7|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "7:10 pm",
+    "porcentaje": 60,
+    "tipo": "Over",
+    "texto": "MLB|Tor|Det|Fri. Jul. 25|7:10 pm ET|60 % Over|40 % Under|9|6|4|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "7:05 pm",
+    "porcentaje": 58,
+    "tipo": "Under",
+    "texto": "MLB|Col|Bal|Fri. Jul. 25|7:05 pm ET|58 % Under|42 % Over|9|7|5|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "12:35 pm",
+    "porcentaje": 56,
+    "tipo": "Over",
+    "texto": "MLB|Tor|Bal|Tue. Jul. 29|12:35 pm ET|56 % Over|44 % Under|8|10|8|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "7:15 pm",
+    "porcentaje": 56,
+    "tipo": "Over",
+    "texto": "MLB|Sd|Stl|Fri. Jul. 25|7:15 pm ET|56 % Over|44 % Under|8.5|5|4|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "4:10 pm",
+    "porcentaje": 56,
+    "tipo": "Under",
+    "texto": "MLB|Mia|Mil|Fri. Jul. 25|4:10 pm ET|56 % Under|44 % Over|8|5|4|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "8:05 pm",
+    "porcentaje": 56,
+    "tipo": "Under",
+    "texto": "MLB|Atl|Tex|Fri. Jul. 25|8:05 pm ET|56 % Under|44 % Over|8|5|4|Details",
+    "alertado": false
+  },
+  {
+    "equipos": [
+      "MLB",
+      "ET"
+    ],
+    "hora": "7:05 pm",
+    "porcentaje": 55,
+    "tipo": "Over",
+    "texto": "MLB|Phi|Nyy|Fri. Jul. 25|7:05 pm ET|55 % Over|45 % Under|10|6|5|Details",
+    "alertado": false
+  }
+]

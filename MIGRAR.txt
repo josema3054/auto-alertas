@@ -1,0 +1,51 @@
+============================
+MIGRAR PROYECTO AUTO ALERTAS
+============================
+
+1. Archivos mínimos para copiar a la nueva carpeta:
+--------------------------------------------------
+
+- auto_alertas.py  (el script principal)
+- settingspsautoalerta.py  (configuración de Telegram)
+- requirements.txt  (dependencias)
+
+2. Estructura recomendada:
+--------------------------
+
+/nueva-carpeta/
+├── auto_alertas.py
+├── settingspsautoalerta.py
+├── requirements.txt
+
+3. Ejemplo de settingspsautoalerta.py:
+--------------------------------------
+
+TELEGRAM_BOT_TOKEN = "TU_TOKEN_AQUI"
+TELEGRAM_CHAT_ID = "TU_CHAT_ID_AQUI"
+
+4. requirements.txt:
+--------------------
+requests
+beautifulsoup4
+
+5. Cambios en auto_alertas.py:
+-----------------------------
+- Cambia la línea:
+    from config import settings
+  por:
+    import settingspsautoalerta as settings
+
+6. Cómo ejecutar:
+-----------------
+- Instala dependencias:
+    pip install -r requirements.txt
+- Ejecuta el script:
+    python auto_alertas.py
+
+7. Notas:
+---------
+- El script funciona sin entorno visual.
+- Recuerda poner tu token y chat_id reales en settingspsautoalerta.py.
+- Puedes dejarlo corriendo 24/7.
+
+¡Listo para migrar y usar en un entorno más liviano!
