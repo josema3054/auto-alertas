@@ -119,7 +119,7 @@ def scrape_partidos():
 def guardar_partidos(partidos):
     with open(PARTIDOS_FILE, 'w', encoding='utf-8') as f:
         json.dump(partidos, f, ensure_ascii=False, indent=2)
-    print(f"✅ Partidos guardados en {PARTIDOS_FILE}")
+    print(f"✅ Partidos guardados en {PARTIDOS_FILE}", flush=True)
 
 def cargar_partidos():
     if not os.path.exists(PARTIDOS_FILE):
@@ -153,7 +153,7 @@ def enviar_alerta(partido):
         f"Total picks: {partido.get('total_expertos', '')}"
     )
     notifier.send_message_sync(mensaje)
-    print(f"🚨 Alerta enviada: {mensaje}")
+    print(f"🚨 Alerta enviada: {mensaje}", flush=True)
 
 def enviar_alerta_scrapeo(partido):
     notifier = TelegramNotifier(settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_CHAT_ID)
@@ -168,17 +168,17 @@ def enviar_alerta_scrapeo(partido):
         f"Total picks: {partido.get('total_expertos', '')}"
     )
     notifier.send_message_sync(mensaje)
-    print(f"📋 Scrapeo enviado: {mensaje}")
+    print(f"📋 Scrapeo enviado: {mensaje}", flush=True)
 
 def main():
-    print("Scrapeando partidos y guardando horas...")
+    print("Scrapeando partidos y guardando horas...", flush=True)
     partidos = scrape_partidos()
     for partido in partidos:
         partido['alertado'] = False
     guardar_partidos(partidos)
     for partido in partidos:
         enviar_alerta_scrapeo(partido)
-    print("Esperando partidos próximos para alerta...")
+    print("Esperando partidos próximos para alerta...", flush=True)
     fecha_ultimo_scrapeo = datetime.now().date()
     scrapeo_realizado_hoy = True
     def normalizar(texto):
@@ -188,12 +188,12 @@ def main():
         ahora = datetime.now()
         # Log periódico cada 5 minutos para confirmar que el script está activo
         if ahora.minute % 5 == 0 and ahora.second < 2:
-            print(f"[{ahora.strftime('%H:%M:%S')}] Script activo y esperando partidos...")
+            print(f"[{ahora.strftime('%H:%M:%S')}] Script activo y esperando partidos...", flush=True)
 
         # ...lógica principal existente...
         # Si es un nuevo día y son las 7:00 am o más, hacer nuevo scraping y enviar todos los partidos
         if ahora.date() != fecha_ultimo_scrapeo and ahora.hour >= 7 and not scrapeo_realizado_hoy:
-            print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 7am...")
+            print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 7am...", flush=True)
             partidos = scrape_partidos()
             for partido in partidos:
                 partido['alertado'] = False
@@ -211,7 +211,7 @@ def main():
         partidos_en_rango = [p for p in partidos if (dt := hora_a_datetime(p['hora'])) and 14 <= (dt - ahora).total_seconds() / 60 <= 16 and not p.get('alertado', False)]
         nuevos_partidos = []
         if partidos_en_rango:
-            print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando para partidos próximos...")
+            print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando para partidos próximos...", flush=True)
             nuevos_partidos = scrape_partidos()
         for partido in partidos:
             dt = hora_a_datetime(partido['hora'])
@@ -220,6 +220,7 @@ def main():
             minutos = (dt - ahora).total_seconds() / 60
             if 14 <= minutos <= 16 and not partido.get('alertado', False):
                 print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando: {partido['equipo1']} vs {partido['equipo2']}")
+                print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando: {partido['equipo1']} vs {partido['equipo2']}", flush=True)
                 partido_actualizado = None
                 for p in nuevos_partidos:
                     if (normalizar(p.get('equipo1')) == normalizar(partido.get('equipo1')) and
