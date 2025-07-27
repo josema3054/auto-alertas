@@ -128,13 +128,18 @@ def cargar_partidos():
         return json.load(f)
 
 def hora_a_datetime(hora_str):
-    # Convierte '7:05 pm' a datetime de hoy
+    # Extrae la hora tipo '1:35 pm' de un string largo y la convierte a datetime de hoy
     hoy = datetime.now().date()
-    try:
-        dt = datetime.strptime(hora_str.strip().lower().replace('pm', 'PM').replace('am', 'AM'), '%I:%M %p')
-        return datetime.combine(hoy, dt.time())
-    except Exception:
-        return None
+    # Buscar patrón de hora tipo '1:35 pm' o '2:10 pm'
+    match = re.search(r'(\d{1,2}:\d{2} (am|pm))', hora_str.lower())
+    if match:
+        hora_limpia = match.group(1)
+        try:
+            dt = datetime.strptime(hora_limpia.replace('pm', 'PM').replace('am', 'AM'), '%I:%M %p')
+            return datetime.combine(hoy, dt.time())
+        except Exception:
+            return None
+    return None
 
 def enviar_alerta(partido):
     notifier = TelegramNotifier(settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_CHAT_ID)
@@ -181,6 +186,11 @@ def main():
 
     while True:
         ahora = datetime.now()
+        # Log periódico cada 5 minutos para confirmar que el script está activo
+        if ahora.minute % 5 == 0 and ahora.second < 2:
+            print(f"[{ahora.strftime('%H:%M:%S')}] Script activo y esperando partidos...")
+
+        # ...lógica principal existente...
         # Si es un nuevo día y son las 7:00 am o más, hacer nuevo scraping y enviar todos los partidos
         if ahora.date() != fecha_ultimo_scrapeo and ahora.hour >= 7 and not scrapeo_realizado_hoy:
             print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 7am...")
