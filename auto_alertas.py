@@ -8,7 +8,8 @@ import sys
 import json
 from datetime import datetime, timedelta
 import time
-import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import re
 
@@ -18,43 +19,101 @@ import settingspsautoalerta as settings
 
 PARTIDOS_FILE = 'partidos_hoy.json'
 
-URL = "https://contests.covers.com/consensus/topoverunderconsensus/mlb/expert"
+def get_url_fecha():
+    hoy = datetime.now().date()
+    return f"https://contests.covers.com/consensus/topoverunderconsensus/mlb/expert/{hoy.strftime('%Y-%m-%d')}"
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
     'Accept-Encoding': 'gzip, deflate',
     'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1'
+    'Upgrade-Insecure-Requests': '1',
+    'Referer': 'https://contests.covers.com/',
+    'Cookie': 'consent=1;'
 }
 
 def scrape_partidos():
     """Scrapea los partidos y sus horas, devuelve lista de dicts"""
-    response = requests.get(URL, headers=HEADERS, timeout=30)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.content, 'html.parser')
+    url = get_url_fecha()
+    chrome_options = Options()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--window-size=1920,1080')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get(url)
+    time.sleep(5)  # Espera para que cargue el JS
+    html = driver.page_source
+    driver.quit()
+    soup = BeautifulSoup(html, 'html.parser')
     partidos = []
-    # Buscar la tabla principal
-    tables = soup.find_all('table')
-    for table in tables:
-        rows = table.find_all('tr')
-        for row in rows:
-            cols = row.find_all('td')
-            if len(cols) >= 5:
-                texto = row.get_text(separator='|', strip=True)
-                # Ejemplo de extracción: equipo1|equipo2|hora|porcentaje|tipo
-                equipos = re.findall(r'([A-Z]{2,3})', texto)
-                hora = re.search(r'(\d{1,2}:\d{2}\s*[ap]m)', texto, re.IGNORECASE)
-                porcentaje = re.search(r'(\d{1,3})\s*%\s*(Over|Under)', texto, re.IGNORECASE)
-                if equipos and hora and porcentaje:
-                    partidos.append({
-                        'equipos': equipos,
-                        'hora': hora.group(1),
-                        'porcentaje': int(porcentaje.group(1)),
-                        'tipo': porcentaje.group(2).capitalize(),
-                        'texto': texto
-                    })
+    # Buscar filas de la tabla de consenso
+    filas = soup.find_all('tr')
+    for fila in filas:
+        celdas = fila.find_all('td')
+        if not celdas or len(celdas) < 1:
+            continue
+        # Extraer equipos
+        matchup_td = None
+        for td in celdas:
+            if td.find('span', class_='covers-CoversConsensus-table--teamBlock'):
+                matchup_td = td
+                break
+        if not matchup_td:
+            continue
+        eq1_tag = matchup_td.find('span', class_='covers-CoversConsensus-table--teamBlock')
+        eq2_tag = matchup_td.find('span', class_='covers-CoversConsensus-table--teamBlock2')
+        equipo1 = eq1_tag.find('a').get_text(strip=True) if eq1_tag and eq1_tag.find('a') else ''
+        equipo2 = eq2_tag.find('a').get_text(strip=True) if eq2_tag and eq2_tag.find('a') else ''
+        if not equipo1 or not equipo2:
+            continue
+        deporte = 'MLB'
+        # Hora (si existe en otra celda)
+        hora = ''
+        for celda in celdas:
+            # Busca la celda que contiene 'pm ET' o 'am ET'
+            texto = celda.get_text(separator=' ', strip=True)
+            if re.search(r'(am|pm) ET', texto):
+                hora = texto
+                break
+        # Porcentajes Over/Under y picks
+        porc_under = porc_over = None
+        # Asigna correctamente los porcentajes según el texto
+        for celda in celdas:
+            porc_tags = celda.find_all('span')
+            for porc_tag in porc_tags:
+                porc_text = porc_tag.get_text(strip=True)
+                porc_val = int(re.findall(r'\d+', porc_text)[0]) if re.findall(r'\d+', porc_text) else None
+                if 'Over' in porc_text:
+                    porc_over = porc_val
+                elif 'Under' in porc_text:
+                    porc_under = porc_val
+        # Picks: suma de los dos números en la celda correspondiente
+        # Extraer el total y los picks según la posición de las celdas
+        total = ''
+        total_expertos = 0
+        if len(celdas) >= 5:
+            # El cuarto <td> es el total
+            total = celdas[3].get_text(strip=True)
+            # El quinto <td> son los picks (ejemplo: 5<br>3)
+            picks_celda = celdas[4]
+            picks = picks_celda.get_text(separator='|', strip=True).split('|')
+            if len(picks) == 2 and picks[0].isdigit() and picks[1].isdigit():
+                total_expertos = int(picks[0]) + int(picks[1])
+        partido = {
+            'deporte': deporte,
+            'equipo1': equipo1,
+            'equipo2': equipo2,
+            'hora': hora,
+            'porcentaje_under': porc_under,
+            'porcentaje_over': porc_over,
+            'total': total,
+            'total_expertos': total_expertos
+        }
+        partidos.append(partido)
     return partidos
 
 def guardar_partidos(partidos):
@@ -79,13 +138,30 @@ def hora_a_datetime(hora_str):
 
 def enviar_alerta(partido):
     notifier = TelegramNotifier(settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_CHAT_ID)
-    mensaje = f"ALERTA MLB\nPartido: {' vs '.join(partido['equipos'])}\nHora: {partido['hora']}\nConsenso: {partido['porcentaje']}% {partido['tipo']}"
+    mensaje = (
+        f"Deporte: {partido.get('deporte', 'MLB')}\n"
+        f"Partido: {partido.get('equipo1', '')} vs {partido.get('equipo2', '')}\n"
+        f"Hora: {partido.get('hora', '')}\n"
+        f"Total: {partido.get('total', '')}\n"
+        f"Under: {partido.get('porcentaje_under', '')}%\n"
+        f"Over: {partido.get('porcentaje_over', '')}%\n"
+        f"Total picks: {partido.get('total_expertos', '')}"
+    )
     notifier.send_message_sync(mensaje)
     print(f"🚨 Alerta enviada: {mensaje}")
 
 def enviar_alerta_scrapeo(partido):
     notifier = TelegramNotifier(settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_CHAT_ID)
-    mensaje = f"SOLO SCRAPEO\nPartido: {' vs '.join(partido['equipos'])}\nHora: {partido['hora']}\nConsenso: {partido['porcentaje']}% {partido['tipo']}"
+    mensaje = (
+        f"SOLO SCRAPEO\n"
+        f"Deporte: {partido.get('deporte', 'MLB')}\n"
+        f"Partido: {partido.get('equipo1', '')} vs {partido.get('equipo2', '')}\n"
+        f"Hora: {partido.get('hora', '')}\n"
+        f"Total: {partido.get('total', '')}\n"
+        f"Under: {partido.get('porcentaje_under', '')}%\n"
+        f"Over: {partido.get('porcentaje_over', '')}%\n"
+        f"Total picks: {partido.get('total_expertos', '')}"
+    )
     notifier.send_message_sync(mensaje)
     print(f"📋 Scrapeo enviado: {mensaje}")
 
