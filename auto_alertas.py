@@ -176,11 +176,14 @@ def main():
     print("Esperando partidos próximos para alerta...")
     fecha_ultimo_scrapeo = datetime.now().date()
     scrapeo_realizado_hoy = True
+    def normalizar(texto):
+        return texto.strip().lower() if isinstance(texto, str) else ''
+
     while True:
         ahora = datetime.now()
         # Si es un nuevo día y son las 7:00 am o más, hacer nuevo scraping y enviar todos los partidos
         if ahora.date() != fecha_ultimo_scrapeo and ahora.hour >= 7 and not scrapeo_realizado_hoy:
-            print("Nuevo día detectado. Scrapeando partidos a las 7am...")
+            print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 7am...")
             partidos = scrape_partidos()
             for partido in partidos:
                 partido['alertado'] = False
@@ -194,17 +197,24 @@ def main():
             scrapeo_realizado_hoy = False
         partidos = cargar_partidos()
         cambios = False
+        # Solo hacer un scrapeo si hay partidos en rango
+        partidos_en_rango = [p for p in partidos if (dt := hora_a_datetime(p['hora'])) and 14 <= (dt - ahora).total_seconds() / 60 <= 16 and not p.get('alertado', False)]
+        nuevos_partidos = []
+        if partidos_en_rango:
+            print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando para partidos próximos...")
+            nuevos_partidos = scrape_partidos()
         for partido in partidos:
             dt = hora_a_datetime(partido['hora'])
             if not dt:
                 continue
             minutos = (dt - ahora).total_seconds() / 60
             if 14 <= minutos <= 16 and not partido.get('alertado', False):
-                print(f"Re-escrapeando antes de partido {' vs '.join(partido['equipos'])}...")
-                nuevos_partidos = scrape_partidos()
+                print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando: {partido['equipo1']} vs {partido['equipo2']}")
                 partido_actualizado = None
                 for p in nuevos_partidos:
-                    if p['equipos'] == partido['equipos'] and p['hora'] == partido['hora']:
+                    if (normalizar(p.get('equipo1')) == normalizar(partido.get('equipo1')) and
+                        normalizar(p.get('equipo2')) == normalizar(partido.get('equipo2')) and
+                        normalizar(p.get('hora')) == normalizar(partido.get('hora'))):
                         partido_actualizado = p
                         break
                 if partido_actualizado:
