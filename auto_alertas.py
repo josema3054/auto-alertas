@@ -72,13 +72,48 @@ def scrape_partidos():
             continue
         deporte = 'MLB'
         # Hora (si existe en otra celda)
-        hora = ''
+        hora_et = ''
         for celda in celdas:
-            # Busca la celda que contiene 'pm ET' o 'am ET'
             texto = celda.get_text(separator=' ', strip=True)
             if re.search(r'(am|pm) ET', texto):
-                hora = texto
+                hora_et = texto
                 break
+        # Convertir hora ET a fecha y hora argentina (acepta formatos con y sin puntos)
+        fecha_arg = ''
+        hora_arg = ''
+        if hora_et:
+            hora_et_limpia = hora_et.replace('ET', '').strip()
+            # Elimina puntos y dobles espacios
+            hora_et_limpia = re.sub(r'\.', '', hora_et_limpia)
+            hora_et_limpia = re.sub(r'\s+', ' ', hora_et_limpia)
+            # Agrega el año actual si no está presente
+            año_actual = datetime.now().year
+            # Si el string no contiene el año, lo agregamos al final
+            if str(año_actual) not in hora_et_limpia:
+                hora_et_limpia = f"{hora_et_limpia} {año_actual}"
+            formatos = ["%a %b %d %I:%M %p %Y", "%A %B %d %I:%M %p %Y"]
+            for fmt in formatos:
+                try:
+                    dt = datetime.strptime(hora_et_limpia, fmt)
+                    dt_arg = dt + timedelta(hours=1)  # ET=UTC-4, Argentina=UTC-3
+                    fecha_arg = dt_arg.strftime("%Y-%m-%d")
+                    hora_arg = dt_arg.strftime("%H:%M")
+                    break
+                except Exception:
+                    continue
+            if not fecha_arg:
+                # Si sigue fallando, intenta con el formato original con puntos y año
+                hora_et_puntos = hora_et.replace('ET', '').strip()
+                if str(año_actual) not in hora_et_puntos:
+                    hora_et_puntos = f"{hora_et_puntos} {año_actual}"
+                try:
+                    dt = datetime.strptime(hora_et_puntos, "%a. %b. %d %I:%M %p %Y")
+                    dt_arg = dt + timedelta(hours=1)
+                    fecha_arg = dt_arg.strftime("%Y-%m-%d")
+                    hora_arg = dt_arg.strftime("%H:%M")
+                except Exception:
+                    fecha_arg = ''
+                    hora_arg = ''
         # Porcentajes Over/Under y picks
         porc_under = porc_over = None
         # Asigna correctamente los porcentajes según el texto
@@ -107,7 +142,8 @@ def scrape_partidos():
             'deporte': deporte,
             'equipo1': equipo1,
             'equipo2': equipo2,
-            'hora': hora,
+            'fecha': fecha_arg,
+            'hora': hora_arg,
             'porcentaje_under': porc_under,
             'porcentaje_over': porc_over,
             'total': total,
@@ -127,19 +163,15 @@ def cargar_partidos():
     with open(PARTIDOS_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def hora_a_datetime(hora_str):
-    # Extrae la hora tipo '1:35 pm' de un string largo y la convierte a datetime de hoy
-    hoy = datetime.now().date()
-    # Buscar patrón de hora tipo '1:35 pm' o '2:10 pm'
-    match = re.search(r'(\d{1,2}:\d{2} (am|pm))', hora_str.lower())
-    if match:
-        hora_limpia = match.group(1)
-        try:
-            dt = datetime.strptime(hora_limpia.replace('pm', 'PM').replace('am', 'AM'), '%I:%M %p')
-            return datetime.combine(hoy, dt.time())
-        except Exception:
-            return None
-    return None
+## Eliminar definición duplicada de hora_a_datetime
+def hora_a_datetime(fecha_str, hora_str):
+    # fecha_str: '2025-07-27', hora_str: '22:31'
+    try:
+        fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+        hora = datetime.strptime(hora_str, "%H:%M").time()
+        return datetime.combine(fecha, hora)
+    except Exception:
+        return None
 
 def enviar_alerta(partido):
     notifier = TelegramNotifier(settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_CHAT_ID)
@@ -208,35 +240,58 @@ def main():
         partidos = cargar_partidos()
         cambios = False
         # Solo hacer un scrapeo si hay partidos en rango
-        partidos_en_rango = [p for p in partidos if (dt := hora_a_datetime(p['hora'])) and 14 <= (dt - ahora).total_seconds() / 60 <= 16 and not p.get('alertado', False)]
-        nuevos_partidos = []
-        if partidos_en_rango:
-            print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando para partidos próximos...", flush=True)
-            nuevos_partidos = scrape_partidos()
-        for partido in partidos:
-            dt = hora_a_datetime(partido['hora'])
-            if not dt:
-                continue
-            minutos = (dt - ahora).total_seconds() / 60
-            if 14 <= minutos <= 16 and not partido.get('alertado', False):
-                print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando: {partido['equipo1']} vs {partido['equipo2']}")
-                print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando: {partido['equipo1']} vs {partido['equipo2']}", flush=True)
-                partido_actualizado = None
-                for p in nuevos_partidos:
-                    if (normalizar(p.get('equipo1')) == normalizar(partido.get('equipo1')) and
-                        normalizar(p.get('equipo2')) == normalizar(partido.get('equipo2')) and
-                        normalizar(p.get('hora')) == normalizar(partido.get('hora'))):
-                        partido_actualizado = p
-                        break
-                if partido_actualizado:
-                    enviar_alerta(partido_actualizado)
-                else:
-                    enviar_alerta(partido)
-                partido['alertado'] = True
-                cambios = True
-        if cambios:
-            guardar_partidos(partidos)
-        time.sleep(60)  # Revisar cada minuto
+        while True:
+            ahora = datetime.now()
+            print(f"[{ahora.strftime('%H:%M:%S')}] ⏳ Escaneando partidos...", flush=True)
+            partidos_en_rango = [p for p in partidos if (dt := hora_a_datetime(p['fecha'], p['hora'])) and 14 <= (dt - ahora).total_seconds() / 60 <= 16 and not p.get('alertado', False)]
+            nuevos_partidos = []
+            # Log periódico cada 5 minutos para confirmar que el script está activo
+            if ahora.minute % 5 == 0 and ahora.second < 2:
+                print(f"[{ahora.strftime('%H:%M:%S')}] Script activo y esperando partidos...", flush=True)
+            # Si es un nuevo día y son las 7:00 am o más, hacer nuevo scraping y enviar todos los partidos
+            if ahora.date() != fecha_ultimo_scrapeo and ahora.hour >= 7 and not scrapeo_realizado_hoy:
+                print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 7am...", flush=True)
+                partidos = scrape_partidos()
+                for partido in partidos:
+                    partido['alertado'] = False
+                guardar_partidos(partidos)
+                for partido in partidos:
+                    enviar_alerta_scrapeo(partido)
+                fecha_ultimo_scrapeo = ahora.date()
+                scrapeo_realizado_hoy = True
+            elif ahora.date() != fecha_ultimo_scrapeo and ahora.hour < 7:
+                # Esperar hasta las 7am para hacer el scraping
+                scrapeo_realizado_hoy = False
+            partidos = cargar_partidos()
+            cambios = False
+            if partidos_en_rango:
+                print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando para partidos próximos...", flush=True)
+                nuevos_partidos = scrape_partidos()
+            for partido in partidos:
+                dt = hora_a_datetime(partido['fecha'], partido['hora'])
+                if not dt:
+                    continue
+                minutos = (dt - ahora).total_seconds() / 60
+                if 14 <= minutos <= 16 and not partido.get('alertado', False):
+                    print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando: {partido['equipo1']} vs {partido['equipo2']}")
+                    print(f"[{ahora.strftime('%H:%M:%S')}] Re-escrapeando: {partido['equipo1']} vs {partido['equipo2']}", flush=True)
+                    partido_actualizado = None
+                    for p in nuevos_partidos:
+                        if (normalizar(p.get('equipo1')) == normalizar(partido.get('equipo1')) and
+                            normalizar(p.get('equipo2')) == normalizar(partido.get('equipo2')) and
+                            normalizar(p.get('fecha')) == normalizar(partido.get('fecha')) and
+                            normalizar(p.get('hora')) == normalizar(partido.get('hora'))):
+                            partido_actualizado = p
+                            break
+                    if partido_actualizado:
+                        enviar_alerta(partido_actualizado)
+                    else:
+                        enviar_alerta(partido)
+                    partido['alertado'] = True
+                    cambios = True
+            if cambios:
+                guardar_partidos(partidos)
+            time.sleep(60)  # Revisar cada minuto
 
 if __name__ == "__main__":
     main()
