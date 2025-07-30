@@ -46,6 +46,19 @@ def scrape_partidos():
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(url)
     time.sleep(5)  # Espera para que cargue el JS
+
+    # Intentar presionar el botón 'Show More' si existe
+    try:
+        show_more = driver.find_element("id", "ShowMoreButton")
+        if show_more.is_displayed() and show_more.is_enabled():
+            show_more.click()
+            print("[scrape_partidos] Botón 'Show More' presionado", flush=True)
+            time.sleep(2)  # Espera a que cargue el resto de los partidos
+        else:
+            print("[scrape_partidos] Botón 'Show More' encontrado pero no interactivo", flush=True)
+    except Exception:
+        print("[scrape_partidos] Botón 'Show More' no encontrado", flush=True)
+
     html = driver.page_source
     driver.quit()
     soup = BeautifulSoup(html, 'html.parser')
@@ -223,9 +236,9 @@ def main():
             print(f"[{ahora.strftime('%H:%M:%S')}] Script activo y esperando partidos...", flush=True)
 
         # ...lógica principal existente...
-        # Si es un nuevo día y son las 7:00 am o más, hacer nuevo scraping y enviar todos los partidos
-        if ahora.date() != fecha_ultimo_scrapeo and ahora.hour >= 7 and not scrapeo_realizado_hoy:
-            print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 7am...", flush=True)
+        # Si es un nuevo día y son las 10:00 am o más, hacer nuevo scraping y enviar todos los partidos
+        if ahora.date() != fecha_ultimo_scrapeo and ahora.hour >= 10 and not scrapeo_realizado_hoy:
+            print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 10am...", flush=True)
             partidos = scrape_partidos()
             for partido in partidos:
                 partido['alertado'] = False
@@ -234,8 +247,8 @@ def main():
                 enviar_alerta_scrapeo(partido)
             fecha_ultimo_scrapeo = ahora.date()
             scrapeo_realizado_hoy = True
-        elif ahora.date() != fecha_ultimo_scrapeo and ahora.hour < 7:
-            # Esperar hasta las 7am para hacer el scraping
+        elif ahora.date() != fecha_ultimo_scrapeo and ahora.hour < 10:
+            # Esperar hasta las 10am para hacer el scraping
             scrapeo_realizado_hoy = False
         partidos = cargar_partidos()
         cambios = False
@@ -248,9 +261,9 @@ def main():
             # Log periódico cada 5 minutos para confirmar que el script está activo
             if ahora.minute % 5 == 0 and ahora.second < 2:
                 print(f"[{ahora.strftime('%H:%M:%S')}] Script activo y esperando partidos...", flush=True)
-            # Si es un nuevo día y son las 7:00 am o más, hacer nuevo scraping y enviar todos los partidos
-            if ahora.date() != fecha_ultimo_scrapeo and ahora.hour >= 7 and not scrapeo_realizado_hoy:
-                print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 7am...", flush=True)
+            # Si es un nuevo día y son las 10:00 am o más, hacer nuevo scraping y enviar todos los partidos
+            if ahora.date() != fecha_ultimo_scrapeo and ahora.hour >= 10 and not scrapeo_realizado_hoy:
+                print(f"[{ahora.strftime('%H:%M:%S')}] Nuevo día detectado. Scrapeando partidos a las 10am...", flush=True)
                 partidos = scrape_partidos()
                 for partido in partidos:
                     partido['alertado'] = False
@@ -259,8 +272,8 @@ def main():
                     enviar_alerta_scrapeo(partido)
                 fecha_ultimo_scrapeo = ahora.date()
                 scrapeo_realizado_hoy = True
-            elif ahora.date() != fecha_ultimo_scrapeo and ahora.hour < 7:
-                # Esperar hasta las 7am para hacer el scraping
+            elif ahora.date() != fecha_ultimo_scrapeo and ahora.hour < 10:
+                # Esperar hasta las 10am para hacer el scraping
                 scrapeo_realizado_hoy = False
             partidos = cargar_partidos()
             cambios = False
